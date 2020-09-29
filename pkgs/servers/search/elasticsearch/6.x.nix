@@ -61,12 +61,18 @@ stdenv.mkDerivation (rec {
   };
 } // optionalAttrs enableUnfree {
   dontPatchELF = true;
-  nativeBuildInputs = [ autoPatchelfHook ];
+  nativeBuildInputs = [
+    (if stdenv.hostPlatform.isLinux then autoPatchelfHook else null)
+  ];
   runtimeDependencies = [ zlib ];
-  postFixup = ''
-    for exe in $(find $out/modules/x-pack-ml/platform/linux-x86_64/bin -executable -type f); do
-      echo "patching $exe..."
-      patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" "$exe"
-    done
-  '';
+  postFixup = (
+		if stdenv.hostPlatform.isLinux then
+		''
+			for exe in $(find $out/modules/x-pack-ml/platform/linux-x86_64/bin -executable -type f); do
+				echo "patching $exe..."
+				patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" "$exe"
+			done
+  	''
+	  else ""
+  );
 })
